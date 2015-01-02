@@ -1,0 +1,68 @@
+#!/bin/bash
+
+function usage
+{
+	if [[ ! -z "$1" ]] 
+	then
+		echo "Error: $1"
+	fi
+
+	FILENAME=$(basename "$0")
+	echo "Usage: $FILENAME SOURCE-TV-SERIES-DIRECTORY DEST-TV-SERIES-DIRECTORY"
+}
+
+if [[ -z "$1" ]] 
+then	
+	usage "Source directory is not specified"
+	exit $?
+fi
+
+if [[ -z "$2" ]]
+then
+	usage "Dest directory is not specified"
+	exit $?
+fi
+
+if [[ ! -d "$2" ]]
+then
+	mkdir "$2"
+fi
+
+OLDIFS=$IFS
+IFS=$'\n'
+for SRC in $(find "$1" -type d -exec echo "{}" \;)
+do
+	DIR=""
+	NUM=""
+	if [[ $SRC =~ ^.+/.+?\.[sS][[:digit:]]+\..+$ ]] 
+	then
+		NUM=$(echo "$SRC"|sed -rn "s,^.+/.+?\.[sS]([[:digit:]]+)\..+$,\1,;p")
+		DIR=$(echo "$SRC"|sed -rn "s,$1,$2,;s,^(.+)/.+$,\1,;p")
+		
+		
+	elif [[ $SRC =~ ^.+/[sS]eason[[:space:]]+[[:digit:]]+$ ]]
+	then
+		NUM=$(echo "$SRC"|sed -rn "s,^.+/[sS]eason[[:space:]]+([[:digit:]]+)$,\1,;p")
+		DIR=$(echo "$SRC"|sed -rn "s,$1,$2,;s,^(.+)/.+$,\1,;p")
+	fi
+
+	if [[ ! -z $DIR ]] && [[ ! -z $NUM ]]
+	then
+		if [[ ! -d "$DIR" ]] 
+		then
+			mkdir "$DIR"
+		fi
+
+		DEST="$DIR/Season $NUM"
+
+		if [[ ! -d "$DEST" ]]
+		then
+			echo "Symlink: '$SRC' ==> '$DEST'"
+	
+			ln -s "$SRC" "$DEST" 
+		fi
+	fi	
+done
+IFS=$OLDIFS
+
+echo "All done"
